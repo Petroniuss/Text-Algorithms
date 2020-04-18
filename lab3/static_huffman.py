@@ -36,13 +36,11 @@ def encode(text, root=None):
 def decode(bits, root):
     decoded = ''
     current = root
-    print(bits)
     for bit in bits:
-        print(bit)
         if bit:
-            current = current.right
+            current = current.rightKid
         else:
-            current = current.left
+            current = current.leftKid
 
         if current.is_leaf():
             decoded += current.letter
@@ -62,7 +60,7 @@ class Node:
             self.letter = letter
 
     def is_leaf(self):
-        return self.leftKid != None
+        return self.leftKid == None
 
     def __lt__(self, other):
         return self.v < other.v
