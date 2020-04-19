@@ -1,4 +1,68 @@
-def adaptive_huffman_encode(text, N=53):
+from bitarray import bitarray
+
+
+def encode(text, N=53):
+    bits = bitarray()
+    tree = Tree(N)
+    for letter in text:
+        if letter in tree.leaves:
+            bits += tree.get_code(letter)
+
+            node = tree.leaves[letter]
+            tree.update(node)
+        else:
+            code = tree.get_code('NYT')
+            code.frombytes(letter.encode())
+            bits += code
+
+            tree.spawn(letter)
+
+    return bits
+
+
+def decode(bits, N=53):
+    tree = Tree(N)
+    decoded = ''
+    i, current = 0, tree.root
+    while i < len(bits):
+        if current.is_leaf():
+            letter = None
+            if current.char == 'NYT':
+                byte = bits[i:i+8]
+                letter = byte.tobytes().decode()
+                i += 8
+
+                tree.spawn(letter)
+            else:
+                letter = current.char
+
+                node = tree.leaves[letter]
+                tree.update(node)
+
+            decoded += letter
+            current = tree.root
+        else:
+            if not bits[i]:
+                current = current.leftKid
+            else:
+                current = current.rightKid
+
+            i += 1
+
+    # In case we finished in leaf.
+    if current.is_leaf():
+        letter = current.char
+
+        node = tree.leaves[letter]
+        tree.update(node)
+
+        decoded += letter
+        current = tree.root
+
+    return decoded
+
+
+def adaptive_huffman(text, N=53):
     tree = Tree(N)
     for letter in text:
         if letter in tree.leaves:
@@ -14,7 +78,7 @@ def adaptive_huffman_encode(text, N=53):
 
 class Tree:
     def __init__(self, N):
-        NYT = Node(w=0, n=N)
+        NYT = Node(w=0, n=N, char='NYT')
 
         self.root = NYT
         self.leaves = {'NYT': NYT}
@@ -23,6 +87,24 @@ class Tree:
 
     def get_NYT(self):
         return self.leaves['NYT']
+
+    def get_code(self, letter):
+        """ Used when encoding. """
+        if letter not in self.leaves:
+            raise Exception("Sth went terribly wrong!")
+
+        node = self.leaves[letter]
+        code = bitarray()
+        while node.parent is not None:
+            parent = node.parent
+            if parent.leftKid == node:
+                code.append(0)
+            else:
+                code.append(1)
+            node = parent
+        code.reverse()
+
+        return code
 
     def spawn(self, letter):
         NYT = self.get_NYT()
@@ -43,7 +125,6 @@ class Tree:
 
         self.update(NYT)
 
-    # FIXME update should increase weight by one!
     def update(self, node):
         # We do not swap node with its parent.
         if node.parent != None and node.parent.w != node.w:
@@ -104,8 +185,7 @@ class Tree:
 
     def __repr__(self):
         return '-' * 5 + 'HUFFMAN TREE' + '-' * 5 + \
-            '\n' + str(self.root) + \
-            '\n' + '-' * 22
+            '\n' + str(self.root)
 
 
 class Node:

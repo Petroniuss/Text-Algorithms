@@ -71,11 +71,11 @@ class Node:
 
         return '-' * 5 + 'HUFFMAN TREE' + '-' * 5 + '\n' + self.str_repr_util()
 
-    def str_repr_util(self, spaces=0):
+    def str_repr_util(self, spaces=1):
         me = f'#{self.v}'
 
         if not self.leftKid:
-            me += f' {self.letter}'
+            me += f' => {self.letter}'
         else:
             left = self.leftKid.str_repr_util(spaces + 1)
             right = self.rightKid.str_repr_util(spaces + 1)
