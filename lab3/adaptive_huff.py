@@ -1,10 +1,13 @@
 from bitarray import bitarray
 import pickle
 
-# FIXME serialization might not work correctly!!!
 
-
-# ------------- FILE UTILS -----------
+# ----------- FILE FORMAT ------------------------------|
+# Two parts:                                            |
+#       - few bytes for int denoting                    |
+#         denoting total number of bits                 |
+#       - bits obtained from adaptive huffman decoding  |
+# ------------------------------------------------------|
 def compress_file(filename, save_to):
     bits = None
     with open(filename, "r") as file:
@@ -12,18 +15,23 @@ def compress_file(filename, save_to):
         bits = encode(text)
 
     with open(save_to, 'wb') as file:
-        pickle.dump(bits)
+        print(len(bits))
+
+        pickle.dump(len(bits), file)
+        bits.tofile(file)
 
 
 def decompress_file(filename, save_to):
     text = None
     with open(filename, "rb") as file:
-        bits = pickle.load(file)
-        text = decode(bits)
+        no = pickle.load(file)
+        print(no)
+        bits = bitarray()
+        bits.fromfile(file)
+        text = decode(bits[:no])
 
     with open(save_to, "w") as file:
         file.write(text)
-# -------------------------------------
 
 
 def encode(text, N=53):
