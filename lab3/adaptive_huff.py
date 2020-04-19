@@ -1,4 +1,29 @@
 from bitarray import bitarray
+import pickle
+
+# FIXME serialization might not work correctly!!!
+
+
+# ------------- FILE UTILS -----------
+def compress_file(filename, save_to):
+    bits = None
+    with open(filename, "r") as file:
+        text = file.read()
+        bits = encode(text)
+
+    with open(save_to, 'wb') as file:
+        pickle.dump(bits)
+
+
+def decompress_file(filename, save_to):
+    text = None
+    with open(filename, "rb") as file:
+        bits = pickle.load(file)
+        text = decode(bits)
+
+    with open(save_to, "w") as file:
+        file.write(text)
+# -------------------------------------
 
 
 def encode(text, N=53):

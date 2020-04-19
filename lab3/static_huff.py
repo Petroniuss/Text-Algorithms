@@ -1,5 +1,37 @@
 from heapq import heappop, heappush
 from bitarray import bitarray
+import pickle
+
+# ------------- FILE UTILS -----------
+# FIXME serialization might not work correctly!!!
+
+
+def compress_file(filename, save_to):
+    compressed = None
+    with open(filename, "r") as file:
+        text = file.read()
+        bits, root = encode(text)
+        compressed = Compressed(bits, root)
+
+    with open(save_to, 'wb') as file:
+        pickle.dump(compressed)
+
+
+def decompress_file(filename, save_to):
+    text = None
+    with open(filename, "rb") as file:
+        compressed = pickle.load(file)
+        text = decode(compressed.bits, compressed.root)
+
+    with open(save_to, "w") as file:
+        file.write(text)
+
+
+class Compressed:
+    def __init__(self, bits, root):
+        self.bits = bits
+        self.root = root
+# ------------------------------------
 
 
 def static_huffman(text):
@@ -30,7 +62,7 @@ def encode(text, root=None):
     for letter in text:
         encoded += codes[letter]
 
-    return encoded
+    return encoded, root
 
 
 def decode(bits, root):
