@@ -67,18 +67,18 @@ class Node:
 
     def __repr__(self):
         if self.parent:
-            return self.foo()
+            return self.str_repr_util()
 
-        return '-' * 5 + 'HUFFMAN TREE' + '-' * 5 + '\n' + self.foo()
+        return '-' * 5 + 'HUFFMAN TREE' + '-' * 5 + '\n' + self.str_repr_util()
 
-    def foo(self, spaces=0):
+    def str_repr_util(self, spaces=0):
         me = f'#{self.v}'
 
         if not self.leftKid:
             me += f' {self.letter}'
         else:
-            left = self.leftKid.foo(spaces + 1)
-            right = self.rightKid.foo(spaces + 1)
+            left = self.leftKid.str_repr_util(spaces + 1)
+            right = self.rightKid.str_repr_util(spaces + 1)
             me += '\n' + (' ' * spaces) + '0 -> ' + left
             me += '\n' + (' ' * spaces) + '1 -> ' + right
 
