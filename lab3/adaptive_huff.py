@@ -1,22 +1,11 @@
 def adaptive_huffman_encode(text, N=53):
     tree = Tree(N)
     for letter in text:
-        # TODO This all works just fine but we have to
-        # TODO check whether node itself isn't violting property!
         if letter in tree.leaves:
             node = tree.leaves[letter]
-
-            tree.weight_class[node.w].remove(node)
-            node.w += 1
-
-            if node.w not in tree.weight_class:
-                tree.weight_class[node.w] = set()
-
-            tree.weight_class[node.w].add(node)
-            tree.update(node.parent)
+            tree.update(node)
         else:
             tree.spawn(letter)
-        print(tree)
 
     return tree
 
@@ -56,22 +45,20 @@ class Tree:
 
     # FIXME update should increase weight by one!
     def update(self, node):
-        max_n_node = node
-        for class_node in self.weight_class[node.w]:
-            if class_node.n > max_n_node.n:
-                max_n_node = class_node
+        # We do not swap node with its parent.
+        if node.parent != None and node.parent.w != node.w:
+            max_n_node = node
+            for class_node in self.weight_class[node.w]:
+                if class_node.n > max_n_node.n:
+                    max_n_node = class_node
 
-        # swap nodes if property is violated.
-        if max_n_node != node:
-            print('Swapping!')
-            print('ToUpdate: ', node)
-            print('MAX', max_n_node)
-            self.swap(node, max_n_node)
-            print('After swap', self, '***')
+            # Swap nodes if property is violated.
+            if max_n_node != node:
+                self.swap(node, max_n_node)
 
         # Update weights.
         self.weight_class[node.w].remove(node)
-        node.w = node.leftKid.w + node.rightKid.w
+        node.w += 1
 
         if node.w not in self.weight_class:
             self.weight_class[node.w] = set()
@@ -88,8 +75,6 @@ class Tree:
         # swap nodes.
         node_parent = node.parent
         max_parent = max_node.parent
-        print('node_parent', node_parent)
-        print('max_parent', max_parent)
 
         # We distinguish two cases:
         #   - both nodes have the same parent
@@ -118,9 +103,8 @@ class Tree:
                 node_parent.rightKid = max_node
 
     def __repr__(self):
-        return '-' * 5 + 'HUFFMAN TREE' + '-' * 5 + '\n' + str(self.root) + \
-            f'\nLeaves: {str(self.leaves)}' + \
-            f'\nWeight Classes: {str(self.weight_class)}' + \
+        return '-' * 5 + 'HUFFMAN TREE' + '-' * 5 + \
+            '\n' + str(self.root) + \
             '\n' + '-' * 22
 
 
