@@ -1,11 +1,10 @@
 from bitarray import bitarray
-import pickle
 
 
 # ----------- FILE FORMAT ------------------------------|
 # Two parts:                                            |
-#       - few bytes for int denoting                    |
-#         denoting total number of bits                 |
+#       - few bytes (3) for int denoting                |
+#         total number of following bits                |
 #       - bits obtained from adaptive huffman decoding  |
 # ------------------------------------------------------|
 def compress_file(filename, save_to):
@@ -15,19 +14,21 @@ def compress_file(filename, save_to):
         bits = encode(text)
 
     with open(save_to, 'wb') as file:
-        print(len(bits))
+        no = int(len(bits))
+        print(no)
 
-        pickle.dump(len(bits), file)
+        file.write(len(bits).to_bytes(3, byteorder='big', signed=False))
         bits.tofile(file)
 
 
 def decompress_file(filename, save_to):
     text = None
     with open(filename, "rb") as file:
-        no = pickle.load(file)
+        no = int.from_bytes(file.read(3), byteorder='big')
         print(no)
         bits = bitarray()
         bits.fromfile(file)
+
         text = decode(bits[:no])
 
     with open(save_to, "w") as file:

@@ -5,6 +5,13 @@ import pickle
 # ------------- FILE UTILS -----------
 # FIXME serialization might not work correctly!!!
 
+# ----------- FILE FORMAT ------------------------------|
+# Two parts:                                            |
+#       - few bytes for int denoting                    |
+#         denoting total number of bits                 |
+#       - bits obtained from adaptive huffman decoding  |
+# ------------------------------------------------------|
+
 
 def compress_file(filename, save_to):
     compressed = None
