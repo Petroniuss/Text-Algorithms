@@ -1,42 +1,85 @@
 from heapq import heappop, heappush
 from bitarray import bitarray
-import pickle
-# TODO implement described format.
-# ----------------------------------------- FILE FORMAT -----------------------------------------|
-# 1. Number of encoded characters.                                                               |
-# 2. Number of bits obtained from huffman encoding.                                              |
-# 3. Size (in bits) of longest code.                                                             |
-# 4. Table: letter - (1 byte) => encoding's size (#2) => actual encoding (of specified prev size)|
-# 5. Rest are bits obtained from huffman encoding.                                               |
-# ----------------------------------------- FILE FORMAT -----------------------------------------|
 
 
+# ----------------------------------------- FILE FORMAT -----------------------------------------|
+# 1. Number of bits obtained from huffman encoding.                                              |
+# 2. Number of encoded characters.                                                               |
+# 3. Table: letter - (1 byte) => encoding's size (1 byte) => actual encoding (1/2/3... bytes)    |
+# 4. Rest are bits obtained from huffman encoding.                                               |
+# ----------------------------------------- FILE FORMAT -----------------------------------------|
 def compress_file(filename, save_to):
-    compressed = None
+    text = None
     with open(filename, "r") as file:
         text = file.read()
-        bits, root = encode(text)
-        compressed = Compressed(bits, root)
 
     with open(save_to, 'wb') as file:
-        pickle.dump(compressed)
+        bits, root = encode(text)
+        codes = bit_codes(root)
+
+        file.write(len(bits).to_bytes(4, byteorder='big', signed=False))
+        file.write(len(codes).to_bytes(4, byteorder='big', signed=False))
+
+        for letter, code in codes.items():
+            letter_byte = bitarray()
+            letter_byte.frombytes(letter.encode())
+            enc_size = len(code)
+
+            letter_byte.tofile(file)
+            file.write(enc_size.to_bytes(1, byteorder='big', signed=False))
+            code.tofile(file)
+
+        bits.tofile(file)
 
 
 def decompress_file(filename, save_to):
     text = None
     with open(filename, "rb") as file:
-        compressed = pickle.load(file)
-        text = decode(compressed.bits, compressed.root)
+        root = Node(-1)
+        no_bits = int.from_bytes(file.read(4), byteorder='big', signed=True)
+        no_chars = int.from_bytes(file.read(4), byteorder='big', signed=True)
+
+        for _ in range(no_chars):
+            letter_bits = bitarray()
+            letter_bits.fromfile(file, 1)
+            letter = letter_bits.tobytes().decode()
+
+            enc_size = int.from_bytes(
+                file.read(1), byteorder='big', signed=True)
+
+            bytes_to_read = ((enc_size - 1) // 8) + 1
+            code = bitarray()
+            code.fromfile(file, bytes_to_read)
+            code = code[:enc_size]
+
+            appendLeaf(root, code, letter)
+
+        bits = bitarray()
+        bits.fromfile(file)
+        bits = bits[:no_bits]
+        text = decode(bits, root)
 
     with open(save_to, "w") as file:
         file.write(text)
 
 
-class Compressed:
-    def __init__(self, bits, root):
-        self.bits = bits
-        self.root = root
-# ------------------------------------
+# When decoding we reconstruct huffman tree.
+def appendLeaf(root, code, letter):
+    current = root
+    for bit in code:
+        if not bit:
+            if current.leftKid is None:
+                current.leftKid = Node(0)
+            current = current.leftKid
+        else:
+            if current.rightKid is None:
+                current.rightKid = Node(1)
+            current = current.rightKid
+
+    # When in leaf.
+    current.letter = letter
+
+# --------------------------------------------------------------------
 
 
 def static_huffman(text):
@@ -97,7 +140,7 @@ class Node:
             self.letter = letter
 
     def is_leaf(self):
-        return self.leftKid == None
+        return self.leftKid == None and self.rightKid == None
 
     def __lt__(self, other):
         return self.v < other.v

@@ -17,14 +17,14 @@ def compress_file(filename, save_to):
         no = int(len(bits))
         print(no)
 
-        file.write(len(bits).to_bytes(3, byteorder='big', signed=False))
+        file.write(len(bits).to_bytes(4, byteorder='big', signed=False))
         bits.tofile(file)
 
 
 def decompress_file(filename, save_to):
     text = None
     with open(filename, "rb") as file:
-        no = int.from_bytes(file.read(3), byteorder='big')
+        no = int.from_bytes(file.read(4), byteorder='big', signed=False)
         print(no)
         bits = bitarray()
         bits.fromfile(file)
