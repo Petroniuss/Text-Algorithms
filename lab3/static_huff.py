@@ -1,16 +1,14 @@
 from heapq import heappop, heappush
 from bitarray import bitarray
 import pickle
-
-# ------------- FILE UTILS -----------
-# FIXME serialization might not work correctly!!!
-
-# ----------- FILE FORMAT ------------------------------|
-# Two parts:                                            |
-#       - few bytes for int denoting                    |
-#         denoting total number of bits                 |
-#       - bits obtained from adaptive huffman decoding  |
-# ------------------------------------------------------|
+# TODO implement described format.
+# ----------------------------------------- FILE FORMAT -----------------------------------------|
+# 1. Number of encoded characters.                                                               |
+# 2. Number of bits obtained from huffman encoding.                                              |
+# 3. Size (in bits) of longest code.                                                             |
+# 4. Table: letter - (1 byte) => encoding's size (#2) => actual encoding (of specified prev size)|
+# 5. Rest are bits obtained from huffman encoding.                                               |
+# ----------------------------------------- FILE FORMAT -----------------------------------------|
 
 
 def compress_file(filename, save_to):
