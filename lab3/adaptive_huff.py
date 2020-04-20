@@ -1,12 +1,12 @@
 from bitarray import bitarray
 
 
-# ----------- FILE FORMAT ------------------------------|
-# Two parts:                                            |
-#       - few bytes (3) for int denoting                |
-#         total number of following bits                |
-#       - bits obtained from adaptive huffman decoding  |
-# ------------------------------------------------------|
+# ----------------------------------------- FILE FORMAT -----------------------------------------|
+# Two parts:                                                                                     |
+#       - few bytes (4) for int denoting                                                         |
+#         total number of following bits                                                         |
+#       - bits obtained from adaptive huffman decoding                                           |
+# ----------------------------------------- FILE FORMAT -----------------------------------------|
 def compress_file(filename, save_to):
     bits = None
     with open(filename, "r") as file:
@@ -15,7 +15,6 @@ def compress_file(filename, save_to):
 
     with open(save_to, 'wb') as file:
         no = int(len(bits))
-        print(no)
 
         file.write(len(bits).to_bytes(4, byteorder='big', signed=False))
         bits.tofile(file)
@@ -25,7 +24,6 @@ def decompress_file(filename, save_to):
     text = None
     with open(filename, "rb") as file:
         no = int.from_bytes(file.read(4), byteorder='big', signed=False)
-        print(no)
         bits = bitarray()
         bits.fromfile(file)
 
@@ -33,6 +31,7 @@ def decompress_file(filename, save_to):
 
     with open(save_to, "w") as file:
         file.write(text)
+# -------------------------------------------- FILE ---------------------------------------------|
 
 
 def encode(text, N=53):

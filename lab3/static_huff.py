@@ -76,10 +76,9 @@ def appendLeaf(root, code, letter):
                 current.rightKid = Node(1)
             current = current.rightKid
 
-    # When in leaf.
+    # When in leaf do as leaves do.
     current.letter = letter
-
-# --------------------------------------------------------------------
+# -------------------------------------------- FILE ---------------------------------------------|
 
 
 def static_huffman(text):
