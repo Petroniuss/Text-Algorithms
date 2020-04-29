@@ -93,7 +93,7 @@ def visualize(x, y, delta=delta, sleep_for=.9):
     """
        This function triggers text animation which
        shows step by step how to convert word x into y.
-       Parameter sleep_for - can be used to customize speed of text animation. 
+       Parameter sleep_for - can be used to customize speed of text animation.
     """
     dashes = max(len(x), len(y), 24)
     arrow_up = '\u2191'
@@ -103,10 +103,8 @@ def visualize(x, y, delta=delta, sleep_for=.9):
 
     def frame():
         print('-' * dashes)
-        print(y)
-        print(i * ' ' + arrow_up)
-        print(x)
-        print(j * ' ' + arrow_up)
+        print(y, i * ' ' + arrow_up, sep='\n')
+        print(x, j * ' ' + arrow_up, sep='\n')
         print('-' * dashes)
         print(operation)
         clear_output(wait=True)
