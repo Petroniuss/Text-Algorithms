@@ -21,9 +21,11 @@ def lcs_table(x, y):
     return dp
 
 
-def lcs(x, y, dp=None):
+def lcs(x, y, dp=None, join=False):
     """
-        Returns longest common subsequence for given strings: x and y.
+        Returns longest common subsequence for given strings
+        or sequences of comparable elements: x and y.
+        join - boolean which specifies whether to join lcs into one element.
     """
     if dp is None:
         dp = lcs_table(x, y)
@@ -44,22 +46,98 @@ def lcs(x, y, dp=None):
             j, i = j + ptrs[k][1], i + ptrs[k][0]
 
     seq.reverse()
+    if not join:
+        return seq
     return "".join(seq)
 
 
-def diff_line(x, y):
-    top = []
-    bottom = []
+def diff_files(original, new):
+    x, y = None, None
+    with open(original, "r") as file:
+        x = file.read().splitlines()
+
+    with open(new, "r") as file:
+        y = file.read().splitlines()
+
+    print(diff(x, y))
+
+
+def diff(x, y):
+    """
+        Diff two sequences of comparable elements (hopefully strings but since this is Python who knows with what it might work :)). 
+
+        Note that I am using ansi escape codes to get colored output, so if terminal (or whatever reads stdout) does not handle them, output might be messy.
+    """
+    output = []
     j, i = 0, 0
     for common in lcs(x, y):
-        while x[j] != common:
+        start_i, start_j = i + 1, j + 1
+        changes = []
+        if j < len(x) and x[j] != common:
+            while j < len(x) and x[j] != common:
+                changes.append('< ' + x[j] + '\n')
+                j = j + 1
+            changes.append(ANSI.STOP)
+
+            output.append(
+                f'{start_j},{start_j + len(changes) - 2}d{start_i}{ANSI.RED}\n')
+            output.extend(changes)
+        j = j + 1
+
+        changes = []
+        if i < len(y) and y[i] != common:
+            while i < len(y) and y[i] != common:
+                changes.append('> ' + y[i] + '\n')
+                i = i + 1
+            changes.append(ANSI.STOP)
+
+            output.append(
+                f'{start_j - 1}a{start_i},{start_i + len(changes) - 2}{ANSI.GREEN}\n')
+            output.extend(changes)
+        i = i + 1
+
+    start_i, start_j = i + 1, j + 1
+    changes = []
+    if j < len(x):
+        while j < len(x):
+            changes.append('< ' + x[j] + '\n')
+            j = j + 1
+        changes.append(ANSI.STOP)
+
+        output.append(
+            f'{start_j},{start_j + len(changes) - 2}d{start_i}{ANSI.RED}\n')
+        output.extend(changes)
+
+    changes = []
+    if i < len(y):
+        while i < len(y):
+            changes.append('> ' + y[i] + '\n')
+            i = i + 1
+        changes.append(ANSI.STOP)
+
+        output.append(
+            f'{start_j - 1}a{start_i},{start_i + len(changes) - 2}{ANSI.GREEN}\n')
+        output.extend(changes)
+
+    return ''.join(output)
+
+
+def diff_line(x, y):
+    "This function `diffs` two lines"
+    top, bottom = [], []
+    j, i = 0, 0
+    for common in lcs(x, y, join=True):
+        while j < len(x) and x[j] != common:
             top.append(x[j])
             bottom.append('-')
             j = j + 1
-        while y[i] != common:
+        j = j + 1
+
+        while i < len(y) and y[i] != common:
             top.append(y[i])
             bottom.append('+')
             i = i + 1
+        i = i + 1
 
         top.append(common)
         bottom.append(' ')
@@ -82,3 +160,10 @@ def diff_line(x, y):
     result = lines + top + '\n' + bottom + '\n'
 
     return result
+
+
+class ANSI:
+    BLUE = '\033[34m'
+    GREEN = '\033[32m'
+    RED = '\033[31m'
+    STOP = '\033[0m'
