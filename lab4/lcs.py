@@ -1,3 +1,4 @@
+import sys
 import numpy as np
 
 
@@ -79,8 +80,12 @@ def diff(x, y):
                 j = j + 1
             changes.append(ANSI.STOP)
 
-            output.append(
-                f'{start_j},{start_j + len(changes) - 2}d{start_i}{ANSI.RED}\n')
+            if len(changes) == 2:
+                output.append(
+                    f'{start_j}d{start_i}{ANSI.RED}\n')
+            else:
+                output.append(
+                    f'{start_j},{start_j + len(changes) - 2}d{start_i}{ANSI.RED}\n')
             output.extend(changes)
         j = j + 1
 
@@ -91,8 +96,12 @@ def diff(x, y):
                 i = i + 1
             changes.append(ANSI.STOP)
 
-            output.append(
-                f'{start_j - 1}a{start_i},{start_i + len(changes) - 2}{ANSI.GREEN}\n')
+            if len(changes) == 2:
+                output.append(
+                    f'{start_j - 1}a{start_i}{ANSI.GREEN}\n')
+            else:
+                output.append(
+                    f'{start_j - 1}a{start_i},{start_i + len(changes) - 2}{ANSI.GREEN}\n')
             output.extend(changes)
         i = i + 1
 
@@ -104,8 +113,12 @@ def diff(x, y):
             j = j + 1
         changes.append(ANSI.STOP)
 
-        output.append(
-            f'{start_j},{start_j + len(changes) - 2}d{start_i}{ANSI.RED}\n')
+        if len(changes) == 2:
+            output.append(
+                f'{start_j}d{start_i}{ANSI.RED}\n')
+        else:
+            output.append(
+                f'{start_j},{start_j + len(changes) - 2}d{start_i}{ANSI.RED}\n')
         output.extend(changes)
 
     changes = []
@@ -115,8 +128,12 @@ def diff(x, y):
             i = i + 1
         changes.append(ANSI.STOP)
 
-        output.append(
-            f'{start_j - 1}a{start_i},{start_i + len(changes) - 2}{ANSI.GREEN}\n')
+        if len(changes) == 2:
+            output.append(
+                f'{start_j - 1}a{start_i}{ANSI.GREEN}\n')
+        else:
+            output.append(
+                f'{start_j - 1}a{start_i},{start_i + len(changes) - 2}{ANSI.GREEN}\n')
         output.extend(changes)
 
     return ''.join(output)
@@ -167,3 +184,15 @@ class ANSI:
     GREEN = '\033[32m'
     RED = '\033[31m'
     STOP = '\033[0m'
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print(ANSI.BLUE + 'Please pass two valid text files.' + ANSI.STOP)
+        exit()
+
+    original = sys.argv[1]
+    new = sys.argv[2]
+
+    print(ANSI.BLUE + '@@ Diff @@' + ANSI.STOP)
+    diff_files(original, new)
