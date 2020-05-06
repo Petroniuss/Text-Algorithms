@@ -54,10 +54,10 @@ def lcs(x, y, dp=None, join=False):
 
 def diff_files(original, new):
     x, y = None, None
-    with open(original, "r") as file:
+    with open(original, "r", encoding='UTF-8') as file:
         x = file.read().splitlines()
 
-    with open(new, "r") as file:
+    with open(new, "r", encoding='UTF-8') as file:
         y = file.read().splitlines()
 
     print(diff(x, y))
