@@ -63,6 +63,24 @@ def diff_files(original, new):
     print(diff(x, y))
 
 
+def lcs_length_files(original, new):
+    """
+        Prints length of lcs for given files. Note that here I could have provided more memory efficient solution,
+        since I don't need whole table (which is needed when reconstructing lcs and I only care about length)
+        but it works for the assignment so I am keeping it that way ;)
+    """
+    x, y = None, None
+    with open(original, "r", encoding='UTF-8') as file:
+        x = file.read()
+
+    with open(new, "r", encoding='UTF-8') as file:
+        y = file.read()
+
+    lcs_len = len(lcs(x, y, join=True))
+    print(
+        f'Length of longest common subsequence for {original} with {len(x)} characters and {new} with {len(y)} characters is {lcs_len}')
+
+
 def diff(x, y):
     """
         Diff two sequences of comparable elements (hopefully strings but since this is Python who knows with what it might work :)). 
