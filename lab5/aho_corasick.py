@@ -61,6 +61,12 @@ class Node:
     def get_fail(self):
         return self.fail
 
+    def get_output(self):
+        if self.output == NOT_ACCEPTING:
+            return UNDEFINED
+        else:
+            return [state.i for state in self.output]
+
     def add_accepting(self, other):
         """ Note that other should be an accepting state! """
         if self.output == NOT_ACCEPTING:
@@ -68,7 +74,11 @@ class Node:
         self.output |= other.output
 
     def set_accepting(self, i):
-        self.output = set([Accepting(i)])
+        """ Note that if node is already accepting this method adds another accepting"""
+        if self.is_accepting():
+            self.output |= set([Accepting(i)])
+        else:
+            self.output = set([Accepting(i)])
 
     def is_accepting(self):
         return self.output != NOT_ACCEPTING
@@ -81,7 +91,7 @@ class Node:
 
     def str_rec(self, spaces):
         s = ' ' * spaces + \
-            f'Node#{self.id}, v = {self.v}, output = {self.output}, fail = {self.fail.id}'
+            f'Node#{self.id}, v = {self.v}, output = {self.output}, fail = #{self.fail.id}'
         s += '\n'
         if self.get_chidren():
             for kid in self.get_chidren():
@@ -93,8 +103,10 @@ class Node:
 class Root(Node):
     """ Root contains self-loop so that when it fails to match it goes back to itself"""
 
-    def __init__(self):
+    def __init__(self, n):
         super().__init__('ROOT', 0)
+        # dictionary i-th pattern can be accepted by states with id in set associated with dict[i]
+        self.final_states = {i: set() for i in range(n)}
 
     def get_node(self, character):
         if character in self.children_dict:
@@ -105,6 +117,12 @@ class Root(Node):
     def get_fail(self):
         return self
 
+    def add_final_state(self, pattern_idx, id):
+        self.final_states[pattern_idx] |= set([id])
+
+    def get_final_states(self):
+        return self.final_states
+
     def __str__(self):
         return '---Root---\n' + self.str_rec(spaces=0) + '-' * 64 + '\n'
 
@@ -113,12 +131,12 @@ class Root(Node):
 # ----------------------
 
 
-def pre_aho_corasik(patterns):
+def preprocess(patterns):
     """
         Preprocessing for Aho-Corasik algorithm.
     """
     # Add self-loop for all characters
-    root = Root()
+    root = Root(len(patterns))
     id = 1
 
     # Enter each pattern
@@ -132,8 +150,7 @@ def pre_aho_corasik(patterns):
 
 
 def enter(pattern_idx, id, pattern, root):
-    """ Enters patterns into trie """
-
+    """ Enters patterns into trie-automata """
     m = len(pattern)
     r = root
     i = 0
@@ -154,6 +171,7 @@ def enter(pattern_idx, id, pattern, root):
 
     # Set last state as accepting
     r.set_accepting(pattern_idx)
+    root.add_final_state(pattern_idx, r.id)
     return id
 
 
@@ -180,17 +198,34 @@ def complete(root):
             # Here we could add another accepting state! FIXME
             if u.is_accepting():
                 p.add_accepting(u)
+                for state in p.output:
+                    pattern_idx = state.i
+                    root.add_final_state(pattern_idx, p.id)
 
 
-def aho_corasik(y, patterns):
+def search(text, patterns):
+    """
+        Returns 2-tuple geneator:
+            - index where matched pattern starts,
+            - index of matched pattern (as in given list of patterns)
+    """
     # Preprocessing
-    r = pre_aho_corasik(patterns)
+    r = preprocess(patterns)
     # Searching
-    for v in y:
+    for i, v in enumerate(text):
         s = r.get_node(v)
         while s == UNDEFINED:
             r = r.get_fail()
             s = r.get_node(v)
         r = s
+        if r.is_accepting():
+            for pattern_idx in r.get_output():
+                x = patterns[pattern_idx]
+                yield(i - len(x) + 1, pattern_idx)
 
-    return r
+
+def print_matches(text, patterns):
+    print('Searching for matches...')
+    for i, ptr_idx in search(text, patterns):
+        print(f'Found {patterns[ptr_idx]} at {i}')
+    print('-' * 64)
