@@ -2,17 +2,6 @@ import math
 
 SPECIAL = chr(0x10ffff)
 
-# Tweaked implementation!
-
-# Todos
-# 1. Implement radix sort to reduce complexity of sort_rename to O(n)
-# 2. Use implemented sort instead of `sorted`
-# 3. Implement searching for pattern using basic approach. -> DBF(pat&text)
-# 4. Implement searching using pos table and binary search yielding O(n + m*log(n))
-#           We could reach O(mlog(n)) time complexity if we were to increase space complexity..
-
-
-# Implementation of sort_rename and kmr is basically tweaked implementation from the lecture.
 
 def sort_rename(sequence, seq_of_chars=False):
     """
