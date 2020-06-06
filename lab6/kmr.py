@@ -70,8 +70,9 @@ import math
 # 1. Implement radix sort to reduce complexity of sort_rename to O(n)
 # 2. Use implemented sort instead of `sorted`
 # 3. Implement searching for pattern using basic approach. -> DBF(pat&text)
-# 4. Implement hashing which will result in (n^2logn) space complexity --> i guess it's too much.
-# 5. Implement searching for pattern using above mentioned hashing.
+# 4. Implement searching using pos table and binary search yielding O(n + m*log(n))
+#           We could reach O(mlog(n)) time complexity if we were to increase space complexity..
+SPECIAL = chr(0x10ffff)
 
 
 def sort_rename(sequence, seq_of_chars=False):
@@ -104,7 +105,7 @@ def sort_rename(sequence, seq_of_chars=False):
     return (position_to_index, first_entry)
 
 
-def kmr(text, m=None, pad_with=chr(0x10ffff)):
+def kmr(text, m=None):
     """
         Computes dbf up to m if set or else up to max power of two.
     """
@@ -112,7 +113,7 @@ def kmr(text, m=None, pad_with=chr(0x10ffff)):
     factor = math.floor(math.log2(len(text)))
     max_len = 2 ** factor
     padding_len = 2 ** (factor) - 1
-    text += pad_with * padding_len
+    text += SPECIAL * padding_len
 
     position_to_index, first_entry = sort_rename(list(text), seq_of_chars=True)
     names = {1: position_to_index}
@@ -136,13 +137,15 @@ def kmr(text, m=None, pad_with=chr(0x10ffff)):
     return (names, entries)
 
 
-def basic_search(pattern, text, break_with=chr(0x10ffff)):
+def basic_search(pattern, text):
     """
         Basic serching which builds dbf each time resulting in O(nlogm) space and time complexity.
     """
     m = len(pattern)
+    if m > len(text) or m <= 0:
+        raise Exception('Invalid pattern!')
 
-    new_text = pattern + break_with + text
+    new_text = pattern + SPECIAL + text
     names, entries = kmr(new_text, m=m)
 
     t = 2 ** math.floor(math.log2(m))
@@ -153,6 +156,75 @@ def basic_search(pattern, text, break_with=chr(0x10ffff)):
 
         if name1 == cand_name1 and name2 == cand_name2:
             yield (i - m - 1)
+
+
+def efficient_search(pattern, text, dbf):
+    """
+        Efficient search using previously constructed dbf yielding time complexity O(mlogn + n)
+    """
+
+    names, pos = dbf
+    m, n = len(pattern), len(text)
+    t = 2 ** math.floor(math.log2(m))
+
+    name = bin_search_name(pattern[:t], text, dbf)
+
+    # if found
+    if name != -1:
+        # in case m is power of 2
+        start_pos = pos[t][name]
+        if m == t:
+            for i in range(start_pos, n - m + 1):
+                if names[t][i] == name:
+                    yield i
+        else:
+            y = pattern[t:]
+            # Here we compare only tails when names <=> prefixes are the same.
+            for i in range(start_pos, n - m + 1):
+                x = text[i+t:i + m]
+                if names[t][i] == name and x == y:
+                    yield i
+
+
+def bin_search_name(pattern, text, dbf):
+    """
+        Returns name associated with given pattern - O(mlogn)
+    """
+    name, pos = dbf
+    m, n = len(pattern), len(text)
+    t = 2 ** math.floor(math.log2(m))
+    lower, upper = 0, len(pos[t]) - 1
+
+    while lower <= upper:
+        mid = (lower + upper) // 2
+        i = pos[t][mid]
+
+        x = text[i:i+m]
+        if i + m >= n:
+            x += (m + i - n) * SPECIAL
+
+        if x > pattern:
+            upper = mid - 1
+        elif x < pattern:
+            lower = mid + 1
+        else:
+            return name[t][i]
+
+    return -1
+
+
+def show_dbf(dbf, text):
+    """
+        Prints name and pos tables in the same manner as shown on the lecture.
+    """
+    names, pos = dbf
+    print('names')
+    for k, v in names.items():
+        print(k, [e + 1 for e in v[:len(text)]])
+
+    print('pos')
+    for k, v in pos.items():
+        print(k, [v[e] + 1 for e in range(len(v) - 1)])
 
 
 def radix_sort(seq, tuple_len):
