@@ -16,6 +16,9 @@ OperatorSet = {'\u2022', '|', '*', '+', '?'}
 
 
 def compile(regex):
+    """
+        After compiling regex you can use .matches(foo).
+    """
     parsed = initial_parse(regex)
     postfix = to_postfix(parsed)
 
@@ -78,8 +81,10 @@ class NFA:
         for v in pattern:
             nexxt = []
             for state in current:
-                if v in state.transitions or state.dot_transition is not None:
+                if v in state.transitions:
                     add_next_state(state.transitions[v], nexxt, set())
+                elif state.dot_transition is not None:
+                    add_next_state(state.dot_transition, nexxt, set())
 
             current = nexxt
 
@@ -197,10 +202,12 @@ def to_NFA(expr):
 
     return stack.pop()
 
+# -------------------------------- INITIAL PARSING ---------------------------------------------------------
+
 
 def ord_between(start, end):
     """
-        Creates set of all characters in between start and end (between in ascii table sense).
+        Creates set of all characters between start and end (between in ascii table sense).
     """
     st_ord, end_ord = ord(start), ord(end)
     if end_ord < st_ord:
@@ -220,8 +227,9 @@ def parse_bracket(expr):
 
         Character classes supported:
             - \d <=> 0-9
+            Todo: check for other character classes!
 
-        Todo: check for other character classes!
+        Note that input shouldn't contain square brackets!
     """
     if len(expr) < 2:
         return '(' + expr + ')'
@@ -309,7 +317,7 @@ def initial_parse(expr):
 
 def to_postfix(expr):
     """
-        The Shunting-Yard Algorithm
+        'The Shunting-Yard Algorithm'
 
         Converts previously parsed expression to postifx notation.
 
