@@ -52,18 +52,26 @@ def parse_bracket(expr):
     if len(expr) < 2:
         return '(' + expr + ')'
 
-    left = None
+    left, i = None, 0
     accepted = set()
-    for i, v in enumerate(expr):
-        # digit class
-        if v == '\d':
-            accepted |= set(string.digits)
+    while i < len(expr):
+        v = expr[i]
+        # character class
+        if v == '\\':
+            # escape character
+            if i + 1 >= len(expr) or expr[i + 1] == '\\':
+                accepted.add(v)
+            # digit class
+            if expr[i + 1] == 'd':
+                accepted |= set(string.digits)
+            i += 2
         # interval
         elif v == '-':
             if i == len(expr) - 1 or i == 0:
                 accepted.add('-')
             else:
                 left = expr[i - 1]
+            i += 1
         # any other character
         else:
             # add interval
@@ -74,6 +82,8 @@ def parse_bracket(expr):
             # add one character
             else:
                 accepted.add(v)
+
+            i += 1
 
     # construct union
     union = []
