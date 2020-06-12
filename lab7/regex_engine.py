@@ -301,7 +301,7 @@ def initial_parse(expr):
             if j == n:
                 raise Exception('Invalid bracket!')
             else:
-                if i != 0:
+                if i != 0 and expr[i - 1] not in set(['(', '|']):
                     parsed.append(concat_chr)
                 parsed.extend(list(parse_bracket(expr[i + 1:j])))
                 i = j + 1
