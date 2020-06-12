@@ -11,19 +11,7 @@ import string
 #   - convert postifx expression to NFA
 #   - implement efficient searching..
 
-
-@dataclass
-class Operator:
-    char: str
-
-
-# I could get rid of these..
-ConcatOp = Operator('\u2022')  # both
-UnionOp = Operator('|')  # either one
-ClosureOp = Operator('*')  # zero or more
-PlusOp = Operator('+')  # one or more
-QuestOp = Operator('?')  # zero or one
-
+ConcatOp = '\u2022'
 OperatorSet = {'\u2022', '|', '*', '+', '?'}
 
 
@@ -35,11 +23,16 @@ def compile(regex):
 
 
 class NFAState:
+    id_gen = 0
+
     def __init__(self, is_accepting):
         self.is_accepting = is_accepting
         self.transitions = {}
         self.epsilon_transitions = []
         self.dot_transition = None
+        self.id = NFAState.id_gen + 1
+
+        NFAState.id_gen += 1
 
     def add_eps_transition(self, to):
         self.epsilon_transitions.append(to)
@@ -50,10 +43,19 @@ class NFAState:
     def add_dot_transition(self, to):
         self.dot_transition = to
 
+    def __str__(self):
+        return f'q#{self.id}, is_accepting: {self.is_accepting}, transitions: {self.transitions.keys()}'
+
+    def __repr__(self):
+        return str(self)
+
+    def __hash__(self):
+        return self.id
+
 
 def add_next_state(state, nexxt, visited):
     """
-        Procedure for discarding eps transitions used NFA.search.
+        Procedure for discarding epsilon-transitions used by NFA.search.
     """
     if len(state.epsilon_transitions) > 0:
         for st in state.epsilon_transitions:
@@ -77,15 +79,11 @@ class NFA:
             nexxt = []
             for state in current:
                 if v in state.transitions or state.dot_transition is not None:
-                    add_next_state(state, nexxt, set())
+                    add_next_state(state.transitions[v], nexxt, set())
 
             current = nexxt
 
-        for state in current:
-            if state.is_accepting:
-                return True
-
-        return False
+        return any([state.is_accepting for state in current])
 
     @staticmethod
     def from_eps() -> NFA:
@@ -238,7 +236,7 @@ def parse_bracket(expr):
             if i + 1 >= len(expr) or expr[i + 1] == '\\':
                 accepted.add(v)
             # digit class
-            if expr[i + 1] == 'd':
+            elif expr[i + 1] == 'd':
                 accepted |= set(string.digits)
             i += 2
         # interval
@@ -277,7 +275,7 @@ def initial_parse(expr):
             where $ stands for union character \u2022.
     """
     op_set = set(['+', '*', '?', ')', '|'])
-    concat_chr = ConcatOp.char
+    concat_chr = ConcatOp
 
     parsed = []
     i, n = 0, len(expr)
@@ -331,7 +329,7 @@ def to_postfix(expr):
 
         elif v in OperatorSet:
             while len(operator_stack) > 0 and operator_stack[-1] != '(' \
-                    and (operator_stack[-1] != ConcatOp.char or v == ConcatOp.char):
+                    and (operator_stack[-1] != ConcatOp or v == ConcatOp):
                 popped = operator_stack.pop()
                 postifx.append(popped)
 
