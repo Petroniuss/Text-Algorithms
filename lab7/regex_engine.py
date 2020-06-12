@@ -3,21 +3,15 @@ from enum import Enum
 from dataclasses import dataclass
 import string
 
-# TODO:
-#   - initial parse:
-#       - add implicit concatenation operators (bullet -> \u2022)
-#       - convert [foo] to (..|..|..|)
-#   - convert given expression to postfix notation -> The Shunting-Yard Algorithm
-#   - convert postifx expression to NFA
-#   - implement efficient searching..
-
 ConcatOp = '\u2022'
 OperatorSet = {'\u2022', '|', '*', '+', '?'}
 
 
 def compile(regex):
     """
-        After compiling regex you can use .matches(foo).
+        Compiles given regex => converts to Nondeterministic Finite Automaton (NFA).
+
+        Usage: after compiling regex you can use .matches(foo).
     """
     parsed = initial_parse(regex)
     postfix = to_postfix(parsed)
@@ -176,6 +170,9 @@ class NFA:
 
 
 def to_NFA(expr):
+    """
+        Converts previously parsed postfix exprresion to NFA.
+    """
     if expr == '':
         return NFA.from_eps()
 
@@ -246,6 +243,12 @@ def parse_bracket(expr):
             # digit class
             elif expr[i + 1] == 'd':
                 accepted |= set(string.digits)
+            # word class
+            elif expr[i + 1] == 'w':
+                accepted |= set(string.ascii_letters + string.digits + '_')
+            # whitespace class
+            elif expr[i + 1] == 's':
+                accepted |= set(string.whitespace)
             i += 2
         # interval
         elif v == '-':
