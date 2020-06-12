@@ -1,3 +1,4 @@
+from __future__ import annotations
 from enum import Enum
 from dataclasses import dataclass
 import string
@@ -7,7 +8,8 @@ import string
 #       - add implicit concatenation operators (bullet -> \u2022)
 #       - convert [foo] to (..|..|..|)
 #   - convert given expression to postfix notation -> The Shunting-Yard Algorithm
-#   - create NFA dataclass
+#   - convert postifx expression to NFA
+#   - implement efficient searching..
 
 
 @dataclass
@@ -25,11 +27,19 @@ QuestOp = Operator('?')  # zero or one
 OperatorSet = {'\u2022', '|', '*', '+', '?'}
 
 
-@dataclass
+def compile(regex):
+    parsed = initial_parse(regex)
+    postfix = to_postfix(parsed)
+
+    return to_NFA(postfix)
+
+
 class NFAState:
-    is_accepting: bool
-    transitions: dict = {}
-    epsilon_transitions: list = []
+    def __init__(self, is_accepting):
+        self.is_accepting = is_accepting
+        self.transitions = {}
+        self.epsilon_transitions = []
+        self.dot_transition = None
 
     def add_eps_transition(self, to):
         self.epsilon_transitions.append(to)
@@ -37,11 +47,54 @@ class NFAState:
     def add_transition(self, symbol, to):
         self.transitions[symbol] = to
 
+    def add_dot_transition(self, to):
+        self.dot_transition = to
+
+
+def add_next_state(state, nexxt, visited):
+    """
+        Procedure for discarding eps transitions used NFA.search.
+    """
+    if len(state.epsilon_transitions) > 0:
+        for st in state.epsilon_transitions:
+            if st not in visited:
+                visited.add(st)
+                add_next_state(st, nexxt, visited)
+    else:
+        nexxt.append(state)
+
 
 @dataclass
 class NFA:
     start: NFAState
     end: NFAState
+
+    def matches(self, pattern):
+        current = []
+        add_next_state(self.start, current, set())
+
+        for v in pattern:
+            nexxt = []
+            for state in current:
+                if v in state.transitions or state.dot_transition is not None:
+                    add_next_state(state, nexxt, set())
+
+            current = nexxt
+
+        for state in current:
+            if state.is_accepting:
+                return True
+
+        return False
+
+    @staticmethod
+    def from_eps() -> NFA:
+        start = NFAState(False)
+        end = NFAState(True)
+
+        start.add_eps_transition(end)
+
+        return NFA(start, end)
 
     @staticmethod
     def from_symbol(symbol) -> NFA:
@@ -49,6 +102,15 @@ class NFA:
         end = NFAState(True)
 
         start.add_transition(symbol, end)
+
+        return NFA(start, end)
+
+    @staticmethod
+    def from_dot() -> NFA:
+        start = NFAState(False)
+        end = NFAState(True)
+
+        start.add_dot_transition(end)
 
         return NFA(start, end)
 
@@ -108,6 +170,34 @@ class NFA:
         self.end.is_accepting = False
 
         return NFA(start, end)
+
+
+def to_NFA(expr):
+    if expr == '':
+        return NFA.from_eps()
+
+    stack = []
+    for token in expr:
+        if token == '*':
+            stack.append(stack.pop().closure())
+        elif token == '+':
+            stack.append(stack.pop().one_or_more())
+        elif token == '?':
+            stack.append(stack.pop().zero_or_one())
+        elif token == '|':
+            right = stack.pop()
+            left = stack.pop()
+            stack.append(left.union(right))
+        elif token == '\u2022':
+            right = stack.pop()
+            left = stack.pop()
+            stack.append(left.concat(right))
+        elif token == '.':
+            stack.append(NFA.from_dot())
+        else:
+            stack.append(NFA.from_symbol(token))
+
+    return stack.pop()
 
 
 def ord_between(start, end):
