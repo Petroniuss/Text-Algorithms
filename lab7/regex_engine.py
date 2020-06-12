@@ -2,12 +2,20 @@ from enum import Enum
 from dataclasses import dataclass
 import string
 
+# TODO:
+#   - initial parse:
+#       - add implicit concatenation operators (bullet -> \u2022)
+#       - convert [foo] to (..|..|..|)
+#   - convert given expression to postfix notation -> The Shunting-Yard Algorithm
+#   - create NFA dataclass
+
 
 @dataclass
 class Operator:
     char: str
 
 
+# I could get rid of these..
 ConcatOp = Operator('\u2022')  # both
 UnionOp = Operator('|')  # either one
 ClosureOp = Operator('*')  # zero or more
@@ -16,12 +24,90 @@ QuestOp = Operator('?')  # zero or one
 
 OperatorSet = {'\u2022', '|', '*', '+', '?'}
 
-# TODO:
-#   - initial parse:
-#       - add implicit concatenation operators (bullet -> \u2022)
-#       - convert [foo] to (..|..|..|)
-#   - convert given expression to postfix notation -> The Shunting-Yard Algorithm
-#   - ...
+
+@dataclass
+class NFAState:
+    is_accepting: bool
+    transitions: dict = {}
+    epsilon_transitions: list = []
+
+    def add_eps_transition(self, to):
+        self.epsilon_transitions.append(to)
+
+    def add_transition(self, symbol, to):
+        self.transitions[symbol] = to
+
+
+@dataclass
+class NFA:
+    start: NFAState
+    end: NFAState
+
+    @staticmethod
+    def from_symbol(symbol) -> NFA:
+        start = NFAState(False)
+        end = NFAState(True)
+
+        start.add_transition(symbol, end)
+
+        return NFA(start, end)
+
+    def concat(self, other: NFA) -> NFA:
+        self.end.add_eps_transition(other.start)
+        self.end.is_accepting = False
+
+        return NFA(self.start, other.end)
+
+    def union(self, other: NFA) -> NFA:
+        start = NFAState(False)
+        start.add_eps_transition(self.start)
+        start.add_eps_transition(other.start)
+
+        end = NFAState(True)
+        self.end.add_eps_transition(end)
+        other.end.add_eps_transition(end)
+
+        self.end.is_accepting = False
+        other.end.is_accepting = False
+
+        return NFA(start, end)
+
+    def closure(self) -> NFA:
+        start = NFAState(False)
+        end = NFAState(True)
+
+        start.add_eps_transition(end)
+        start.add_eps_transition(self.start)
+        self.end.add_eps_transition(self.start)
+        self.end.add_eps_transition(end)
+
+        self.end.is_accepting = False
+
+        return NFA(start, end)
+
+    def one_or_more(self) -> NFA:
+        start = NFAState(False)
+        end = NFAState(True)
+
+        start.add_eps_transition(self.start)
+        self.end.add_eps_transition(self.start)
+        self.end.add_eps_transition(end)
+
+        self.end.is_accepting = False
+
+        return NFA(start, end)
+
+    def zero_or_one(self) -> NFA:
+        start = NFAState(False)
+        end = NFAState(True)
+
+        start.add_eps_transition(end)
+        start.add_eps_transition(self.start)
+        self.end.add_eps_transition(end)
+
+        self.end.is_accepting = False
+
+        return NFA(start, end)
 
 
 def ord_between(start, end):
@@ -42,7 +128,7 @@ def ord_between(start, end):
 def parse_bracket(expr):
     """
         Converts characters inside square brackets (expr) to union.
-        For example 'a-c12' => '(a|b|c|1|2')
+        For example 'a-c12' => '(a|b|c|1|2)'
 
         Character classes supported:
             - \d <=> 0-9
