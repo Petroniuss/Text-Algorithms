@@ -13,10 +13,10 @@ Overview of laboratories:
   - static Huffman
   - dynamic Huffman
  4. edit distance:
-  - animation of algorithm
+  - animation of the algorithm
   - implementation of diff (popular linux command)
  5. finiding two diemnsional patterns:
-  - implementation of Aho-Corasick and Bird&Baker to find all occurences of letter within image
+  - implementation of Aho-Corasick and Bird&Baker to find all occurences of a letter within image
  6. once again finding patterns in strings: 
   - DBF and Karp-Miller-Rosenberg Algorithm 
  7. implementation of regex engine 
